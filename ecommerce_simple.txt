@@ -1,0 +1,70 @@
+E-Commerce Platform Requirements Meeting
+
+Product Manager: Let's define our e-commerce system requirements.
+
+CUSTOMER MANAGEMENT:
+Customers have accounts with email, password, name, and phone number.
+Each customer can have multiple shipping addresses and billing addresses.
+Customers can create wishlists to save products they like.
+Customers have a loyalty points balance that they earn from purchases.
+
+PRODUCT CATALOG:
+Products have SKU, name, description, price, and category.
+Each product belongs to one brand.
+Products can have multiple variants like size and color.
+Products have inventory quantities tracked in warehouses.
+Customers can write reviews for products with ratings and comments.
+
+SHOPPING CART:
+Customers add products to their shopping cart.
+Cart items include product, quantity, and price.
+Carts are saved across sessions.
+
+ORDER MANAGEMENT:
+Customers place orders from their cart.
+Orders contain order items (product, quantity, price).
+Orders have shipping address and billing address.
+Orders go through states: pending, processing, shipped, delivered.
+Each order has an order date and total amount.
+
+PAYMENT:
+Orders are paid using payment methods like credit card or PayPal.
+Payments have status: pending, completed, or failed.
+Payments store transaction ID and amount.
+
+SHIPPING:
+Orders are shipped by carriers like FedEx or UPS.
+Shipments have tracking numbers.
+Shipments contain order items being shipped.
+
+RETURNS:
+Customers can return orders within 30 days.
+Returns have return reason and status.
+Approved returns generate refunds.
+
+PROMOTIONS:
+Promotional codes give discounts on orders.
+Promotions have discount percentage or fixed amount.
+Promotions have start date and end date.
+
+SUPPORT:
+Customers create support tickets for issues.
+Tickets are assigned to support agents.
+Tickets have priority and status.
+
+RELATIONSHIPS:
+- Customer has many addresses
+- Customer has one wishlist
+- Customer places many orders
+- Order belongs to customer
+- Order has many order items
+- Order item references product
+- Product belongs to brand
+- Product belongs to category
+- Product has many reviews
+- Review written by customer
+- Order has one payment
+- Order has one shipment
+- Shipment has tracking
+- Customer has many support tickets
+- Promotion applies to orders

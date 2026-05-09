@@ -1,0 +1,22 @@
+Online Store System
+
+We need a simple online store.
+
+Customers can register with email and password.
+Each customer has a name and phone number.
+
+Products have a name, price, and description.
+Products belong to categories like Electronics or Clothing.
+
+Customers add products to their shopping cart.
+The cart shows the total price.
+
+Customers place orders from their cart.
+Each order has an order date and status.
+Order status can be pending, shipped, or delivered.
+
+Orders are paid using credit card or PayPal.
+Each payment has an amount and payment date.
+
+Products are shipped to the customer address.
+Each shipment has a tracking number.
