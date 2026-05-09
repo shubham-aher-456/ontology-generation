@@ -34,7 +34,7 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
       return
     }
 
-    // Create nodes from entities
+    // Create nodes from entities with larger sizes for better visibility
     data.entities.forEach((entity) => {
       const node = {
         id: entity.name,
@@ -42,7 +42,7 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
         type: entity.type,
         description: entity.description,
         properties: entity.properties,
-        val: 15 + (entity.properties?.length || 0) * 2,
+        val: 25 + (entity.properties?.length || 0) * 3, // Larger base size
         color: getColorByType(entity.type)
       }
       nodes.push(node)
@@ -138,28 +138,28 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
   }
   
   const handleSpreadNodes = () => {
-    // Restart the simulation with stronger repulsion
+    // Restart the simulation with stronger repulsion for better readability
     if (graphRef.current) {
       const fg = graphRef.current
-      fg.d3Force('charge').strength(-600)
-      fg.d3Force('link').distance(150)
+      fg.d3Force('charge').strength(-900)
+      fg.d3Force('link').distance(250)
       fg.d3ReheatSimulation()
       
       // Auto-fit after spreading
       setTimeout(() => {
-        fg.zoomToFit(400, 80)
+        fg.zoomToFit(400, 100)
       }, 2000)
       
-      toast.success('Spreading nodes - will auto-fit in 2 seconds')
+      toast.success('Spreading nodes for better readability')
     }
   }
   
   const handleCompactNodes = () => {
-    // Restart the simulation with weaker repulsion
+    // Restart the simulation with moderate spacing
     if (graphRef.current) {
       const fg = graphRef.current
-      fg.d3Force('charge').strength(-200)
-      fg.d3Force('link').distance(80)
+      fg.d3Force('charge').strength(-400)
+      fg.d3Force('link').distance(120)
       fg.d3ReheatSimulation()
       
       // Auto-fit after compacting
@@ -167,23 +167,23 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
         fg.zoomToFit(400, 80)
       }, 2000)
       
-      toast.success('Compacting nodes - will auto-fit in 2 seconds')
+      toast.success('Compacting nodes')
     }
   }
   
   const handleResetLayout = () => {
-    // Reset to default forces
+    // Reset to default forces with good spacing
     if (graphRef.current) {
       const fg = graphRef.current
-      fg.d3Force('charge').strength(-400)
-      fg.d3Force('link').distance(120)
+      fg.d3Force('charge').strength(-600)
+      fg.d3Force('link').distance(180)
       fg.d3ReheatSimulation()
       
       setTimeout(() => {
-        fg.zoomToFit(400, 80)
+        fg.zoomToFit(400, 100)
       }, 2000)
       
-      toast.success('Resetting layout - will auto-fit in 2 seconds')
+      toast.success('Resetting to optimal layout')
     }
   }
 
@@ -256,35 +256,58 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
       nodeVal="val"
       nodeCanvasObject={(node, ctx, globalScale) => {
         const label = node.name
-        const fontSize = 14 / globalScale
+        // Much larger font size that scales better
+        const fontSize = Math.max(16, 20 / globalScale)
         const isHighlighted = highlightNodes.size === 0 || highlightNodes.has(node.id)
         const isSelected = selectedNode && selectedNode.id === node.id
         
-        ctx.font = `bold ${fontSize}px Sans-Serif`
+        // Larger node size for better visibility
+        const nodeRadius = Math.max(node.val, 20)
+        
+        ctx.font = `bold ${fontSize}px Arial, Sans-Serif`
         
         // Draw node circle with highlighting
         ctx.beginPath()
-        ctx.arc(node.x, node.y, node.val, 0, 2 * Math.PI, false)
+        ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI, false)
         ctx.fillStyle = isHighlighted ? node.color : '#e5e7eb'
         ctx.fill()
         
-        // Thicker border for selected node
-        ctx.strokeStyle = isSelected ? '#fbbf24' : '#fff'
-        ctx.lineWidth = isSelected ? 5 / globalScale : 3 / globalScale
+        // Thicker border for better visibility
+        ctx.strokeStyle = isSelected ? '#fbbf24' : '#ffffff'
+        ctx.lineWidth = Math.max(3, 4 / globalScale)
         ctx.stroke()
         
-        // Draw label with background for better readability
+        // Draw label with prominent background for maximum readability
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        const textY = node.y + node.val + 12 / globalScale
+        const textY = node.y + nodeRadius + Math.max(18, 22 / globalScale)
         
-        // Background for text
+        // Measure text for background
         const textWidth = ctx.measureText(label).width
-        ctx.fillStyle = isHighlighted ? 'rgba(255, 255, 255, 0.95)' : 'rgba(229, 231, 235, 0.8)'
-        ctx.fillRect(node.x - textWidth/2 - 4, textY - fontSize/2 - 2, textWidth + 8, fontSize + 4)
+        const padding = Math.max(8, 10 / globalScale)
+        const bgHeight = fontSize + Math.max(6, 8 / globalScale)
         
-        // Text
-        ctx.fillStyle = isHighlighted ? '#1f2937' : '#9ca3af'
+        // Draw prominent background with border
+        ctx.fillStyle = isHighlighted ? 'rgba(255, 255, 255, 0.98)' : 'rgba(229, 231, 235, 0.9)'
+        ctx.fillRect(
+          node.x - textWidth/2 - padding, 
+          textY - bgHeight/2, 
+          textWidth + padding * 2, 
+          bgHeight
+        )
+        
+        // Add border to text background
+        ctx.strokeStyle = isHighlighted ? node.color : '#d1d5db'
+        ctx.lineWidth = Math.max(1.5, 2 / globalScale)
+        ctx.strokeRect(
+          node.x - textWidth/2 - padding, 
+          textY - bgHeight/2, 
+          textWidth + padding * 2, 
+          bgHeight
+        )
+        
+        // Draw text with high contrast
+        ctx.fillStyle = isHighlighted ? '#111827' : '#6b7280'
         ctx.fillText(label, node.x, textY)
       }}
       linkLabel="name"
@@ -293,12 +316,12 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
         return highlightLinks.has(link) ? '#3b82f6' : '#e5e7eb'
       }}
       linkWidth={link => {
-        if (highlightLinks.size === 0) return 2
-        return highlightLinks.has(link) ? 4 : 1
+        if (highlightLinks.size === 0) return 3
+        return highlightLinks.has(link) ? 5 : 2
       }}
       linkDirectionalArrowLength={link => {
-        if (highlightLinks.size === 0) return 8
-        return highlightLinks.has(link) ? 10 : 6
+        if (highlightLinks.size === 0) return 12
+        return highlightLinks.has(link) ? 15 : 10
       }}
       linkDirectionalArrowRelPos={1}
       linkCanvasObjectMode={() => 'after'}
@@ -307,19 +330,39 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
         if (!label) return
         
         const isHighlighted = highlightLinks.size === 0 || highlightLinks.has(link)
-        const fontSize = isHighlighted ? 12 / globalScale : 10 / globalScale
-        ctx.font = `${isHighlighted ? 'bold' : ''} ${fontSize}px Sans-Serif`
+        // Larger font size for relationship labels
+        const fontSize = Math.max(14, isHighlighted ? 18 / globalScale : 16 / globalScale)
+        ctx.font = `bold ${fontSize}px Arial, Sans-Serif`
         
         const midX = (link.source.x + link.target.x) / 2
         const midY = (link.source.y + link.target.y) / 2
         
-        // Background for label
+        // Measure text for background
         const textWidth = ctx.measureText(label).width
-        ctx.fillStyle = isHighlighted ? 'rgba(59, 130, 246, 0.95)' : 'rgba(229, 231, 235, 0.8)'
-        ctx.fillRect(midX - textWidth/2 - 4, midY - fontSize/2 - 2, textWidth + 8, fontSize + 4)
+        const padding = Math.max(8, 10 / globalScale)
+        const bgHeight = fontSize + Math.max(6, 8 / globalScale)
         
-        // Label text
-        ctx.fillStyle = isHighlighted ? '#ffffff' : '#9ca3af'
+        // Draw prominent background
+        ctx.fillStyle = isHighlighted ? 'rgba(59, 130, 246, 0.98)' : 'rgba(255, 255, 255, 0.95)'
+        ctx.fillRect(
+          midX - textWidth/2 - padding, 
+          midY - bgHeight/2, 
+          textWidth + padding * 2, 
+          bgHeight
+        )
+        
+        // Add border to background
+        ctx.strokeStyle = isHighlighted ? '#2563eb' : '#9ca3af'
+        ctx.lineWidth = Math.max(1.5, 2 / globalScale)
+        ctx.strokeRect(
+          midX - textWidth/2 - padding, 
+          midY - bgHeight/2, 
+          textWidth + padding * 2, 
+          bgHeight
+        )
+        
+        // Draw label text with high contrast
+        ctx.fillStyle = isHighlighted ? '#ffffff' : '#374151'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(label, midX, midY)
@@ -329,14 +372,15 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
       cooldownTicks={150}
       d3AlphaDecay={0.01}
       d3VelocityDecay={0.2}
-      linkDistance={120}
-      chargeStrength={-400}
+      linkDistance={180}
+      chargeStrength={-600}
       enableNodeDrag={true}
       enableZoomInteraction={true}
       enablePanInteraction={true}
       onEngineStop={() => {
         if (graphRef.current) {
-          graphRef.current.zoomToFit(400, 80)
+          // Fit with more padding for better visibility
+          graphRef.current.zoomToFit(400, 100)
         }
       }}
     />
