@@ -32,6 +32,20 @@
   font-weight: 600;
 }
 
+.pinned-badge {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
 .header-actions {
   display: flex;
   gap: 0.5rem;

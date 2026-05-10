@@ -11,6 +11,7 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
   const [highlightNodes, setHighlightNodes] = useState(new Set())
   const [highlightLinks, setHighlightLinks] = useState(new Set())
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [pinnedCount, setPinnedCount] = useState(0)
   const graphRef = useRef()
 
   useEffect(() => {
@@ -105,6 +106,31 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
     setHighlightLinks(connectedLinks)
   }
   
+  const handleNodeDrag = (node) => {
+    // Pin the node position when dragging starts
+    node.fx = node.x
+    node.fy = node.y
+  }
+  
+  const handleNodeDragEnd = (node) => {
+    // Keep the node pinned at its new position
+    node.fx = node.x
+    node.fy = node.y
+    
+    // Update pinned count
+    updatePinnedCount()
+    
+    toast.success(`Node "${node.name}" pinned at this position`, {
+      duration: 2000,
+      icon: '📌'
+    })
+  }
+  
+  const updatePinnedCount = () => {
+    const count = graphData.nodes.filter(n => n.fx !== undefined && n.fx !== null).length
+    setPinnedCount(count)
+  }
+  
   const handleBackgroundClick = () => {
     setHighlightNodes(new Set())
     setHighlightLinks(new Set())
@@ -141,6 +167,13 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
     // Restart the simulation with stronger repulsion for better readability
     if (graphRef.current) {
       const fg = graphRef.current
+      
+      // Unpin all nodes before spreading
+      graphData.nodes.forEach(node => {
+        node.fx = null
+        node.fy = null
+      })
+      
       fg.d3Force('charge').strength(-900)
       fg.d3Force('link').distance(250)
       fg.d3ReheatSimulation()
@@ -158,6 +191,13 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
     // Restart the simulation with moderate spacing
     if (graphRef.current) {
       const fg = graphRef.current
+      
+      // Unpin all nodes before compacting
+      graphData.nodes.forEach(node => {
+        node.fx = null
+        node.fy = null
+      })
+      
       fg.d3Force('charge').strength(-400)
       fg.d3Force('link').distance(120)
       fg.d3ReheatSimulation()
@@ -175,6 +215,13 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
     // Reset to default forces with good spacing
     if (graphRef.current) {
       const fg = graphRef.current
+      
+      // Unpin all nodes to allow them to move freely
+      graphData.nodes.forEach(node => {
+        node.fx = null
+        node.fy = null
+      })
+      
       fg.d3Force('charge').strength(-600)
       fg.d3Force('link').distance(180)
       fg.d3ReheatSimulation()
@@ -184,6 +231,18 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
       }, 2000)
       
       toast.success('Resetting to optimal layout')
+    }
+  }
+  
+  const handleUnpinAll = () => {
+    // Unpin all nodes without restarting simulation
+    if (graphRef.current) {
+      graphData.nodes.forEach(node => {
+        node.fx = null
+        node.fy = null
+      })
+      setPinnedCount(0)
+      toast.success('All nodes unpinned - they can now move freely')
     }
   }
 
@@ -220,6 +279,14 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
           <path d="M21 3v5h-5"/>
           <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
           <path d="M3 21v-5h5"/>
+        </svg>
+      </button>
+      <button className="btn-icon" onClick={handleUnpinAll} title="Unpin All Nodes">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 17v5"/>
+          <path d="M9 10v6h6v-6"/>
+          <path d="M9 10V8a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+          <line x1="3" y1="3" x2="21" y2="21"/>
         </svg>
       </button>
       <button className="btn-icon" onClick={handleZoomIn} title="Zoom In">
@@ -260,6 +327,7 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
         const fontSize = Math.max(16, 20 / globalScale)
         const isHighlighted = highlightNodes.size === 0 || highlightNodes.has(node.id)
         const isSelected = selectedNode && selectedNode.id === node.id
+        const isPinned = node.fx !== undefined && node.fx !== null
         
         // Larger node size for better visibility
         const nodeRadius = Math.max(node.val, 20)
@@ -273,9 +341,36 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
         ctx.fill()
         
         // Thicker border for better visibility
-        ctx.strokeStyle = isSelected ? '#fbbf24' : '#ffffff'
-        ctx.lineWidth = Math.max(3, 4 / globalScale)
+        // Special border for pinned nodes
+        if (isPinned) {
+          ctx.strokeStyle = isSelected ? '#fbbf24' : '#ef4444'
+          ctx.lineWidth = Math.max(4, 5 / globalScale)
+        } else {
+          ctx.strokeStyle = isSelected ? '#fbbf24' : '#ffffff'
+          ctx.lineWidth = Math.max(3, 4 / globalScale)
+        }
         ctx.stroke()
+        
+        // Draw pin indicator for pinned nodes
+        if (isPinned) {
+          const pinSize = Math.max(8, 10 / globalScale)
+          ctx.save()
+          ctx.translate(node.x + nodeRadius * 0.6, node.y - nodeRadius * 0.6)
+          
+          // Draw pin icon
+          ctx.fillStyle = '#ef4444'
+          ctx.beginPath()
+          ctx.arc(0, 0, pinSize, 0, 2 * Math.PI)
+          ctx.fill()
+          
+          ctx.fillStyle = '#ffffff'
+          ctx.font = `bold ${pinSize * 1.2}px Arial`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText('📌', 0, 0)
+          
+          ctx.restore()
+        }
         
         // Draw label with prominent background for maximum readability
         ctx.textAlign = 'center'
@@ -296,8 +391,8 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
           bgHeight
         )
         
-        // Add border to text background
-        ctx.strokeStyle = isHighlighted ? node.color : '#d1d5db'
+        // Add border to text background (red for pinned nodes)
+        ctx.strokeStyle = isPinned ? '#ef4444' : (isHighlighted ? node.color : '#d1d5db')
         ctx.lineWidth = Math.max(1.5, 2 / globalScale)
         ctx.strokeRect(
           node.x - textWidth/2 - padding, 
@@ -368,6 +463,8 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
         ctx.fillText(label, midX, midY)
       }}
       onNodeClick={handleNodeClick}
+      onNodeDrag={handleNodeDrag}
+      onNodeDragEnd={handleNodeDragEnd}
       onBackgroundClick={handleBackgroundClick}
       cooldownTicks={150}
       d3AlphaDecay={0.01}
@@ -447,6 +544,11 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
               <span className="stat-badge">
                 {graphData.links.length} Relationships
               </span>
+              {pinnedCount > 0 && (
+                <span className="stat-badge pinned-badge">
+                  📌 {pinnedCount} Pinned
+                </span>
+              )}
             </div>
           </div>
           
@@ -491,9 +593,10 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
             <ul>
               <li><strong>Click node</strong> to focus on its connections</li>
               <li><strong>Click background</strong> to show all</li>
-              <li><strong>Drag nodes</strong> to rearrange</li>
-              <li><strong>Mouse wheel</strong> to zoom</li>
-              <li><strong>Spread/Compact</strong> to adjust spacing</li>
+              <li><strong>Drag nodes</strong> to pin them in place 📌</li>
+              <li><strong>Pinned nodes</strong> stay fixed when zooming/panning</li>
+              <li><strong>Red border</strong> indicates pinned nodes</li>
+              <li><strong>Unpin button</strong> releases all pinned nodes</li>
             </ul>
           </div>
           
@@ -518,6 +621,11 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
             <span className="stat-badge">
               {graphData.links.length} Relationships
             </span>
+            {pinnedCount > 0 && (
+              <span className="stat-badge pinned-badge">
+                📌 {pinnedCount} Pinned
+              </span>
+            )}
           </div>
         </div>
         
@@ -554,9 +662,10 @@ function OntologyViewer({ ontologyData, onRequestFeedback, onConfirm }) {
           <ul>
             <li><strong>Click node</strong> to focus on its connections</li>
             <li><strong>Click background</strong> to show all</li>
-            <li><strong>Drag nodes</strong> to rearrange</li>
-            <li><strong>Mouse wheel</strong> to zoom</li>
-            <li><strong>Spread/Compact</strong> to adjust spacing</li>
+            <li><strong>Drag nodes</strong> to pin them in place 📌</li>
+            <li><strong>Pinned nodes</strong> stay fixed when zooming/panning</li>
+            <li><strong>Red border</strong> indicates pinned nodes</li>
+            <li><strong>Unpin button</strong> releases all pinned nodes</li>
           </ul>
         </div>
       </div>
